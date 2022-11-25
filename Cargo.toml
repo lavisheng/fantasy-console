@@ -1,0 +1,15 @@
+[package]
+name = "fantasy-console"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[[bin]]
+name = "rust"
+path = "src/main.rs"
+
+[lib]
+name = "rustness"
+path = "src/lib.rs"
+[dependencies]
+nalgebra = "0.31.4"

@@ -3,7 +3,11 @@ use crate::cpu::cpu;
 //arithmetic
 // signed addition
 pub fn add(c: & mut cpu::CPU, data: (usize, usize, usize, usize)){
-    c.r[data.0] = ((c.r[data.1] as i32) + (c.r[data.2] as i32)) as u32;
+    unsafe{
+        c.r[data.0] = std::mem::transmute::<i32, u32>(
+            std::mem::transmute::<u32, i32>(c.r[data.1]) +
+                std::mem::transmute::<u32, i32>(c.r[data.2]));
+    }
 }
 
 //signed immediate addiiton
@@ -84,3 +88,58 @@ pub fn sub(c: &mut cpu::CPU, data: (usize, usize, usize, usize)){
 pub fn subu(c: &mut cpu::CPU, data: (usize, usize, usize, usize)){
     c.r[data.0] = c.r[data.1] - c.r[data.2];
 }
+
+// rotate right
+pub fn rotr(c: &mut cpu::CPU, data:(usize, usize, usize, usize)){
+    c.r[data.0] = (c.r[data.1] << (32 - data.3 + 1)) | (c.r[data.1] >> data.3);
+}
+
+// rotate right variable
+pub fn rotrv(c: &mut cpu::CPU, data: (usize, usize, usize, usize)){
+    let rot = c.r[data.2] & 0x1F;
+    c.r[data.0] = (c.r[data.1] << (32 - rot + 1)) | (c.r[data.1] >> rot);
+}
+
+// shift left 
+pub fn sll(c: &mut cpu::CPU, data: (usize, usize, usize, usize)){
+    c.r[data.0] = c.r[data.1] << data.3;
+}
+
+// shift left variable
+pub fn sllv(c: &mut cpu::CPU, data: (usize, usize, usize)){
+    let shift = c.r[data.2] & 0x1F;
+    c.r[data.0] = c.r[data.1] << shift;
+}
+
+// shift right
+pub fn sra(c: &mut cpu::CPU, data: (usize, usize, usize, usize)){
+    unsafe{
+        c.r[data.0] = std::mem::transmute::<i32, u32>(
+            std::mem::transmute::<u32, i32>(c.r[data.1])
+        ) >> data.3;
+    }
+    c.r[data.0] = c.r[data.1] >> data.3;
+}
+
+// shift right variable
+pub fn srav(c: &mut cpu::CPU, data: (usize, usize, usize, usize)){
+    let shift = c.r[data.2] & 0x1F;
+    unsafe{
+        c.r[data.0] = std::mem::transmute::<i32, u32>(
+            std::mem::transmute::<u32, i32>(c.r[data.1])
+        ) >> shift;
+    }
+}
+
+// shift right logical
+pub fn srl(c: &mut cpu::CPU, data: (usize, usize, usize, usize)){
+    // default u32 shift is logical
+    c.r[data.0] = c.r[data.1] >> data.3;
+}
+
+pub fn srlv(c: &mut cpu::CPU, data: (usize, usize, usize, usize)){
+    let shift = c.r[data.2] & 0x1F;
+    c.r[data.0] = c.r[data.1] >> shift;
+}
+
+

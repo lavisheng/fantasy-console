@@ -1,3 +1,5 @@
+use std::fmt::Pointer;
+
 use crate::cpu::cpu;
 
 //arithmetic
@@ -38,7 +40,7 @@ pub fn clz(c: &mut cpu::CPU, data: (usize, usize, usize, usize)){
     c.r[data.0] = (0..32).fold(0, |acc, elem| acc + !((num >> elem) & 1));
 }
 
-// need to figure out how to convert this kekw
+// need to figure out how to convert this
 // load address
 // lui -> lor
 //pub fn la(c: &mut cpu::CPU, data: (usize, usize, usize, u16)){
@@ -137,9 +139,84 @@ pub fn srl(c: &mut cpu::CPU, data: (usize, usize, usize, usize)){
     c.r[data.0] = c.r[data.1] >> data.3;
 }
 
+// shift right logical variable
 pub fn srlv(c: &mut cpu::CPU, data: (usize, usize, usize, usize)){
     let shift = c.r[data.2] & 0x1F;
     c.r[data.0] = c.r[data.1] >> shift;
 }
 
+// AND
+pub fn and(c: &mut cpu::CPU, data: (usize, usize, usize, usize)){
+    c.r[data.0] = c.r[data.1] & c.r[data.2];
+}
 
+// and immediate
+pub fn andi(c: &mut cpu::CPU, data: (usize, usize, u16)){
+    c.r[data.0] = c.r[data.1] & (data.2 as u32);
+}
+
+// extract
+pub fn ext(c: &mut cpu::CPU, data: (usize, usize, usize, usize)){
+    // TODO: test this one since its pretty weird
+    // do i need to shift it back after?
+    let mask = ((1 << data.3) - 1) << data.2;
+    c.r[data.0] = c.r[data.1] & mask;
+}
+
+// insert
+pub fn ins(c: &mut cpu::CPU, data: (usize, usize, usize, usize)){
+    let mask = (1 << data.3) -1;
+    c.r[data.0] |= (c.r[data.1] & mask) << data.2;
+}
+
+// nor
+pub fn nor(c: &mut cpu::CPU, data: (usize, usize, usize, usize)){
+    c.r[data.0] = !(c.r[data.1] | c.r[data.2]);
+}
+
+// NOT
+pub fn not(c: &mut cpu::CPU, data: (usize, usize, usize, usize)){
+    c.r[data.0] = !c.r[data.1];
+}
+
+// or
+pub fn or(c: &mut cpu::CPU, data: (usize, usize, usize, usize)){
+    c.r[data.0] = c.r[data.1] | c.r[data.2];
+}
+
+// ori 
+pub fn ori(c: &mut cpu::CPU, data: (usize, usize, u16)){
+    c.r[data.0] = c.r[data.1] | (data.2 as u32);
+}
+
+// xor
+pub fn xor(c: &mut cpu::CPU, data: (usize, usize, usize, usize)){
+    c.r[data.0] = c.r[data.1] ^ c.r[data.2];
+}
+
+// xori
+pub fn xori(c: &mut cpu::CPU, data: (usize, usize, u16)){
+    c.r[data.0] = c.r[data.1] ^ (data.2 as u32);
+}
+
+mod tests{
+    use super::*;
+
+    #[test]
+    fn test_ext(){
+        // am i interpreting this instruction correctly?
+        let mut c = cpu::CPU::init(1);
+        c.r[1] = 0b11011100000000000000000000000000;
+        ext(&mut c, (0, 1, 25, 3));
+        assert!(c.r[0] == 0b00001100000000000000000000000000);
+    }
+
+    #[test]
+    fn test_ins(){
+        let mut c = cpu::CPU::init(1);
+        c.r[0] = 0;
+        c.r[1] = 0b1111;
+        ins(&mut c, (0, 1, 2, 4));
+        assert!(c.r[0] == 0b111100);
+    }
+}

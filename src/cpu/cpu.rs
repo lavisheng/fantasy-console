@@ -1,32 +1,39 @@
 use crate::bus::Bus;
-use std::collections::HashMap;
-//use crate::cpu::Instructions;
 use crate::cpu::instructions;
+use std::collections::HashMap;
 
 pub struct CPU {
     pub pc: u32,
     pb: u32, // program break location
-    pub sp: u32,
+    pub acc_hi: u32,
+    pub acc_lo: u32,
     pub r: [u32; 32], //registers
     bus: Bus,
     reg: HashMap<u32, fn(&mut CPU, (usize, usize, usize, usize))>, // 5 + 5 + 5 + 5
-    imm: HashMap<u32, fn(&mut CPU, (usize, usize, u16))>,          // 5 + 5 + 16
-    jmp: HashMap<u32, fn(&mut CPU, u32)>,                          // 6 + 26
+    imm: HashMap<u32, fn(&mut CPU, (usize, usize, u16))>, // 5 + 5 + 16
+    jmp: HashMap<u32, fn(&mut CPU, u32)>,                 // 6 + 26
 }
 
 impl CPU {
     // size indicates program size(lines of code)
     pub fn init(size: u32) -> CPU {
-        let r: HashMap<u32, fn(&mut CPU, (usize, usize, usize, usize))> = HashMap::from([(
+        let r: HashMap<
+            u32,
+            fn(&mut CPU, (usize, usize, usize, usize)),
+        > = HashMap::from([(
             0b100000,
-            instructions::add as fn(&mut CPU, (usize, usize, usize, usize)),
+            instructions::add
+                as fn(&mut CPU, (usize, usize, usize, usize)),
         )]);
-        let i: HashMap<u32, fn(&mut CPU, (usize, usize, u16))> = HashMap::from([]);
+        let i: HashMap<u32, fn(&mut CPU, (usize, usize, u16))> =
+            HashMap::from([]);
         let j: HashMap<u32, fn(&mut CPU, u32)> = HashMap::from([]);
         CPU {
             pc: 0,
             pb: size,
-            sp: 0xffff - 1,
+            //sp: 0xffff - 1,
+            acc_hi: 0,
+            acc_lo:0,
             r: [0; 32],
             bus: Bus::init(),
             reg: r,

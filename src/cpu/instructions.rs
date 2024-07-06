@@ -1,3 +1,4 @@
+use rand::Rng;
 use std::fmt::Pointer;
 
 use crate::cpu::cpu;
@@ -261,6 +262,85 @@ pub fn sltiu(c: &mut cpu::CPU, data: (usize, usize, u16)) {
 
 pub fn sltu(c: &mut cpu::CPU, data: (usize, usize, usize, usize)) {
     c.r[data.0] = if c.r[data.1] < c.r[data.2] { 1 } else { 0 };
+}
+
+// div by zero is unpredictable
+pub fn div(c: &mut cpu::CPU, data: (usize, usize, usize, usize)) {
+    if c.r[data.1] == 0 {
+        c.acc_hi = rng.gen::<u32>();
+        c.acc_lo = rng.gen::<u32>();
+        return;
+    }
+    unsafe {
+        let res: i64 = std::mem::transmute::<u32, i64>(c.r[data.0])
+            / std::mem::transmute::<u32, i64>(c.r[data.1]);
+        c.acc_hi = (std::mem::transmute::<i64, u64>(res) >> 8) as u32;
+        c.acc_lo = (std::mem::transmute::<i64, u64>(res) & 0xFFFFFFFF)
+            as u32;
+    }
+}
+
+pub fn divu(c: &mut cpu::CPU, data: (usize, usize, usize, usize)) {
+    if c.r[data.1] == 0 {
+        c.acc_hi = rng.gen::<u32>();
+        c.acc_lo = rng.gen::<u32>();
+        return;
+    }
+    let res: u64 = c.r[data.0] as u64 / c.r[data.1] as u64;
+    c.acc_hi = (res >> 8) as u32;
+    c.acc_lo = res as u32;
+}
+
+// (hi, lo) + GPR[rs] x GPR[rt]
+pub fn madd(c: &mut cpu::CPU, data: (usize, usize, usize, usize)) {
+    unsafe {
+        let acc: i64 =
+            std::mem::transmute::<u64, i64>(
+                ((c.acc_hi as u64) << 8) + c.acc_lo as u64,
+            ) + std::mem::transmute::<u32, i64>(c.r[data.0])
+                * std::mem::transmute::<u32, i64>(c.r[data.1]);
+        c.acc_hi = (std::mem::transmute::<i64, u64>(acc) >> 8) as u32;
+        c.acc_lo = std::mem::transmute::<i64, u32>(acc);
+    }
+}
+
+pub fn maddu(c: &mut cpu::CPU, data: (usize, usize, usize, usize)) {
+    let acc = (c.acc_hi as u64)
+        << 8 + c.acc_lo as u64
+            + (c.r[data.0] as u64) * (c.r[data.1] as u64);
+    c.acc_hi = (acc >> 8) as u32;
+    c.acc_lo = acc as u32;
+}
+
+pub fn msub(c: &mut cpu::CPU, data: (usize, usize, usize, usize)) {
+    unsafe {
+        let acc: i64 =
+            std::mem::transmute::<u64, i64>(
+                ((c.acc_hi as u64) << 8) + c.acc_lo as u64,
+            ) - std::mem::transmute::<u32, i64>(c.r[data.0])
+                * std::mem::transmute::<u32, i64>(c.r[data.1]);
+        c.acc_hi = (std::mem::transmute::<i64, u64>(acc) >> 8) as u32;
+        c.acc_lo = std::mem::transmute::<i64, u32>(acc);
+    }
+}
+
+pub fn msubu(c: &mut cpu::CPU, data: (usize, usize, usize, usize)) {
+    let acc = (c.acc_hi as u64)
+        << 8 + c.acc_lo as u64
+            - (c.r[data.0] as u64) * (c.r[data.1] as u64);
+    c.acc_hi = (acc >> 8) as u32;
+    c.acc_lo = acc as u32;
+}
+
+pub fn mul(c: &mut cpu::CPU, data: (usize, usize, usize, usize)) {
+    unsafe {
+        c.r[data.0] = std::mem::transmute::<i32, u32>(
+            std::mem::transmute::<u32, i32>(c.r[data.1])
+                * std::mem::transmute
+                < u32,
+            i32 > (c.r[data.2]),
+        );
+    }
 }
 
 mod tests {
